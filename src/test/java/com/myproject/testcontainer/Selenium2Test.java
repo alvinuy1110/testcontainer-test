@@ -23,7 +23,10 @@ import static org.testng.Assert.assertEquals;
  *
  * docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome
  *
- * docker run -d -p 4444:4444 -e START_XVFB=false -v /dev/shm:/dev/shm selenium/standalone-chrome
+ * docker run -d -p 4444:4444 -e START_XVFB=false -e SE_OPTS="-debug" -v /dev/shm:/dev/shm selenium/standalone-chrome
+ *
+ * THIS works: for some reason the start does not work in ubuntu 14!!!
+ * docker run -d -p 4444:4444 --entrypoint=/opt/bin/start-selenium-standalone.sh -v /dev/shm:/dev/shm selenium/standalone-chrome
  */
 @Slf4j
 public class Selenium2Test {
@@ -35,16 +38,33 @@ public class Selenium2Test {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless");
 
-        RemoteWebDriver driver =new RemoteWebDriver(
-                new URL("http://127.0.0.1:4444")
-                ,options);
-        driver.get("http://example.com");
-        String heading = driver.findElement(By.xpath("/html/body/div/h1"))
-                .getText();
+        RemoteWebDriver driver = null;
+        try {
+            driver = new RemoteWebDriver(
+                    new URL("http://localhost:4444/wd/hub")
+                    , options);
+            driver.get("http://example.com");
+            String heading = driver.findElement(By.xpath("/html/body/div/h1"))
+                    .getText();
 
-        assertEquals("Example Domain", heading);
+            assertEquals("Example Domain", heading);
 
-        driver.quit();
-        driver.close();
+        } finally {
+            // close tab/ window
+            if  (driver!=null) {
+                driver.close();
+            }
+
+            // close  the  session altogether
+            try {
+                driver.quit();
+            } catch (Exception e) {
+
+            }
+        }
+
+
+
+
     }
 }
